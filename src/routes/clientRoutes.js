@@ -1,0 +1,10 @@
+const express = require('express');
+const router = express.Router();
+const clientController = require('../controllers/clientController');
+
+// GET route to fetch all clients
+router.get('/clients', clientController.getClientController);
+
+router.post('/clients', clientController.createClientController);
+
+module.exports = router;
