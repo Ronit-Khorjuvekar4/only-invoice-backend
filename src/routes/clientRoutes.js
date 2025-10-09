@@ -7,4 +7,6 @@ router.get('/clients', clientController.getClientController);
 
 router.post('/clients', clientController.createClientController);
 
+router.post('/create-invoice', clientController.createInvoiceController);
+
 module.exports = router;

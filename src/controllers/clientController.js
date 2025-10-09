@@ -16,9 +16,19 @@ exports.createClientController = async(req, res) => {
     try {
 
         const result = await clientService.createClientService(req.body)
-        res.status(201).json({ "msg": "Client Added" });
+        res.status(201).json({ result, "msg": "Client Added" });
 
     } catch (err) {
         console.log(err)
+    }
+}
+
+exports.createInvoiceController = async(req, res) => {
+    try {
+        const result = await clientService.createInvoiceService(req.body, req.query.clientId)
+
+    } catch (err) {
+        console.log(err)
+
     }
 }

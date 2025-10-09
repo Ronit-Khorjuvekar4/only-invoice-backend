@@ -1,50 +1,34 @@
 const mongoose = require('mongoose')
-const { getNextSequence } = require('./Counter')
+const Client = require('./clientModel')
 const { createOrgId } = require('../utils/common')
 
-const clientSchema = new mongoose.Schema({
-    clientName: {
+const invoiceSchema = new mongoose.Schema({
+    clientId: {
         type: String,
         required: true,
         trim: true,
+        ref: Client
     },
-    orgName: {
-        type: String,
-        required: true,
-        trim: true
-    },
-    orgId: {
-        type: String,
-        required: false,
-        trim: true,
-    },
-    clientEmail: {
+    invoiceNumber: {
         type: String,
         required: true,
         unique: true,
-        match: [/.+@.+\..+/, 'Please fill a valid email address'],
-        sparse: true,
-    },
-    clientPhone: {
-        type: Number,
-        length: 10,
-        trim: true,
-        required: true,
-        unique: true,
-    },
-    clientAddress1: {
-        type: String,
-        required: false,
         trim: true
     },
-    clientAddress2: {
-        type: String,
-        required: false,
-        trim: true
-    },
-    year: {
+    startDate: {
         type: Date,
-        default: new Date().getFullYear()
+        required: true
+    },
+    dueDate: {
+        type: Date,
+        required: true
+    },
+    status: {
+        type: String,
+        enum: ['Paid', 'Pending', 'Overdue', 'Advanced Paid'],
+        default: 'Pending',
+        required: true,
+        trin: true
     },
     createdAt: {
         type: Date,
@@ -75,6 +59,5 @@ clientSchema.pre('save', async function(next) {
     }
 });
 
-const Client = mongoose.model('Client', clientSchema)
-
-module.exports = Client;
+const Invoice = mongoose.model('Invoice', invoiceSchema)
+module.exports = Invoice
