@@ -1,5 +1,7 @@
 const Client = require('../models/clientModel');
-const Invoice = require('../models/clientModel');
+const Invoice = require('../models/invoideModel');
+const InvoiceDetails = require('../models/invoiceDetails');
+
 
 const { createOrgId, creteInvoiceId } = require('../utils/common');
 
@@ -50,25 +52,49 @@ exports.createInvoiceService = async(body, clientId) => {
         } = body
 
 
-        const orgId = await Client.findOne({ _id: clientId }, 'orgId');
+        const invoice = await Invoice({
+            startDate,
+            dueDate,
+            status,
+            clientId
+        })
 
-        const invoiceCount = await Invoice.countDocuments({ clientId: clientId });
+        await invoice.save()
 
-        let newInvoiceId = await creteInvoiceId(orgId.orgId, invoiceCount)
+        const invoiceNumber = invoice._id
+
+        const invoiceDetails = await InvoiceDetails({
+            discount,
+            advanceAmount,
+            items,
+            subTotal,
+            finalTotal,
+            remainingBalance,
+            invoiceNumber,
+            clientId
+        })
+
+        await invoiceDetails.save()
 
 
-
-
-        // const invoice = await Invoice({
-        //     startDate,
-        //     dueDate,
-        //     status,
-        //     clientId
-        // })
+        return { 'msg': "Saved" }
 
     } catch (err) {
         console.log(err)
 
     }
 
+}
+
+exports.getInvoiceService = async(clientId) => {
+    try {
+        const ok = await InvoiceDetails.find({ clientId: clientId }, 'discount advanceAmount subTotal finalTotal remainingBalance')
+            .populate('invoiceNumber', 'invoiceNumber status dueDate')
+            .exec();
+
+        return ok
+
+    } catch (err) {
+        console.log(err)
+    }
 }

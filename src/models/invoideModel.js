@@ -1,17 +1,19 @@
 const mongoose = require('mongoose')
 const Client = require('./clientModel')
-const { createOrgId } = require('../utils/common')
+const { getNextSequence } = require('./invoiceCounter')
+const { creteInvoiceId } = require('../utils/common')
+
 
 const invoiceSchema = new mongoose.Schema({
     clientId: {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
         required: true,
         trim: true,
         ref: Client
     },
     invoiceNumber: {
         type: String,
-        required: true,
+        required: false,
         unique: true,
         trim: true
     },
@@ -40,14 +42,19 @@ const invoiceSchema = new mongoose.Schema({
     }
 })
 
-clientSchema.pre('save', async function(next) {
+
+invoiceSchema.pre('save', async function(next) {
+
     if (this.isNew) {
         try {
-            const nextSeq = await getNextSequence('clientId');
+
+            const nextSeq = await getNextSequence('invoiceId');
             this.orgSequenceNumber = nextSeq;
 
+            const orgId = await Client.findOne({ _id: this.clientId }, 'orgId')
+
             const currentYear = new Date().getFullYear();
-            this.orgId = `${await createOrgId(this.orgName.toUpperCase())}-${currentYear}-${this.orgSequenceNumber}`;
+            this.invoiceNumber = `INV-${await creteInvoiceId(orgId.orgId)}-${this.orgSequenceNumber}-${currentYear}`;
 
             next();
         } catch (error) {

@@ -42,10 +42,6 @@ const clientSchema = new mongoose.Schema({
         required: false,
         trim: true
     },
-    year: {
-        type: Date,
-        default: new Date().getFullYear()
-    },
     createdAt: {
         type: Date,
         default: Date.now
