@@ -9,7 +9,10 @@ router.post('/clients', clientController.createClientController);
 
 router.post('/create-invoice', clientController.createInvoiceController);
 
-router.get('/get-invoice', clientController.getInvoiceController);
+router.get('/get-invoice', clientController.getAllInvoiceController);
+
+router.get('/single-invoice', clientController.getSingleInvoiceController);
+
 
 
 module.exports = router;

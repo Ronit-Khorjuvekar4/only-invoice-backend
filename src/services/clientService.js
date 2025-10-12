@@ -61,7 +61,7 @@ exports.createInvoiceService = async(body, clientId) => {
 
         await invoice.save()
 
-        const invoiceNumber = invoice._id
+        const invoice_id = invoice._id
 
         const invoiceDetails = await InvoiceDetails({
             discount,
@@ -70,7 +70,7 @@ exports.createInvoiceService = async(body, clientId) => {
             subTotal,
             finalTotal,
             remainingBalance,
-            invoiceNumber,
+            invoice_id,
             clientId
         })
 
@@ -86,11 +86,39 @@ exports.createInvoiceService = async(body, clientId) => {
 
 }
 
-exports.getInvoiceService = async(clientId) => {
+exports.getAllInvoiceService = async(clientId,invoices) => {
     try {
-        const ok = await InvoiceDetails.find({ clientId: clientId }, 'discount advanceAmount subTotal finalTotal remainingBalance')
-            .populate('invoiceNumber', 'invoiceNumber status dueDate')
+        let invoiceDetailsData = 'discount advanceAmount subTotal finalTotal remainingBalance'
+        let invoideData = 'invoiceNumber status dueDate'
+        let clientData = 'orgName'
+        
+        const ok = await InvoiceDetails.find({ clientId: clientId }, invoiceDetailsData)
+            .populate('invoice_id', invoideData)
+            .populate('clientId',clientData)
             .exec();
+
+        return ok
+
+    } catch (err) {
+        console.log(err)
+    }
+}
+
+
+exports.getSingleInvoiceService = async(invoiceId) => {
+    try {
+
+        
+        let invoiceDetailsData = 'discount advanceAmount subTotal finalTotal remainingBalance items'
+        let invoideData = 'invoiceNumber status dueDate'
+        let clientData = 'clientName orgName clientEmail clientPhone clientAddress1 clientAddress2 orgId'
+
+        const ok = await InvoiceDetails.findOne({ invoice_id: invoiceId }, invoiceDetailsData)
+            .populate('invoice_id', invoideData)
+            .populate('clientId',clientData)
+            .exec();
+
+        console.log(ok)
 
         return ok
 

@@ -26,7 +26,7 @@ exports.createClientController = async(req, res) => {
 exports.createInvoiceController = async(req, res) => {
     try {
         const result = await clientService.createInvoiceService(req.body, req.query.clientId)
-        res.status(201).json({ result, "msg": "Invoice Added" });
+        res.status(201).json({ result, "msg": "Invoice Added" }); 
 
     } catch (err) {
         console.log(err)
@@ -34,9 +34,19 @@ exports.createInvoiceController = async(req, res) => {
     }
 }
 
-exports.getInvoiceController = async(req, res) => {
+exports.getAllInvoiceController = async(req, res) => {
     try {
-        const result = await clientService.getInvoiceService(req.query.clientId)
+        const result = await clientService.getAllInvoiceService(req.query.clientId)
+        res.status(201).json(result);
+
+    } catch (err) {
+        console.log(err)
+    }
+}
+
+exports.getSingleInvoiceController = async(req, res) => {
+    try {
+        const result = await clientService.getSingleInvoiceService(req.query.invoiceId)
         res.status(201).json(result);
 
     } catch (err) {

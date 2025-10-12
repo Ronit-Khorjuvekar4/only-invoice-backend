@@ -4,7 +4,7 @@ const Client = require('./clientModel')
 
 
 const invoiceDetailSchema = new mongoose.Schema({
-    invoiceNumber: {
+    invoice_id: {
         type: mongoose.Schema.Types.ObjectId,
         ref: Invoice,
         required: true
