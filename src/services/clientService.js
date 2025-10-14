@@ -1,12 +1,10 @@
 const Client = require('../models/clientModel');
 const Invoice = require('../models/invoideModel');
 const InvoiceDetails = require('../models/invoiceDetails');
-
-
+const mongoose = require('mongoose')
 const { createOrgId, creteInvoiceId } = require('../utils/common');
 
-
-exports.getClientService = async() => {
+exports.getClientService = async () => {
     try {
         const ok = await Client.find({},
             '_id orgId clientName clientEmail orgName clientPhone'
@@ -18,7 +16,7 @@ exports.getClientService = async() => {
     }
 }
 
-exports.createClientService = async(clientData) => {
+exports.createClientService = async (clientData) => {
 
     try {
         console.log(clientData)
@@ -27,19 +25,26 @@ exports.createClientService = async(clientData) => {
         return newClient;
 
     } catch (error) {
-        console.log(error)
+        console.error('Error creating client:', error);
+
         if (error.code === 11000) {
-            // return res.status(409).json({ message: 'Client already exists or unique ID collision occurred.' });
+            throw new Error('Client already exists or unique ID collision occurred.');
         }
+
+        throw new Error('Failed to create client');
     }
 
 }
 
-exports.createInvoiceService = async(body, clientId) => {
+exports.createInvoiceService = async (body, clientId) => {
+
+    let session = null;
 
     try {
+        session = await mongoose.startSession();
+        session.startTransaction();
 
-        let {
+        const {
             startDate,
             dueDate,
             status,
@@ -49,21 +54,18 @@ exports.createInvoiceService = async(body, clientId) => {
             subTotal,
             finalTotal,
             remainingBalance
-        } = body
+        } = body;
 
-
-        const invoice = await Invoice({
+        const [invoice] = await Invoice.create([{
             startDate,
             dueDate,
             status,
             clientId
-        })
+        }], { session });
 
-        await invoice.save()
+        const invoice_id = invoice._id;
 
-        const invoice_id = invoice._id
-
-        const invoiceDetails = await InvoiceDetails({
+        const [invoiceDetails] = await InvoiceDetails.create([{
             discount,
             advanceAmount,
             items,
@@ -72,57 +74,129 @@ exports.createInvoiceService = async(body, clientId) => {
             remainingBalance,
             invoice_id,
             clientId
-        })
+        }], { session });
 
-        await invoiceDetails.save()
+        await session.commitTransaction();
+        session.endSession();
 
-
-        return { 'msg': "Saved" }
+        return { invoiceDetails };
 
     } catch (err) {
-        console.log(err)
-
+        if (session) await session.abortTransaction();
+        if (session) session.endSession();
+        console.error('Error creating invoice:', err);
+        throw new Error(err.message || 'Failed to create invoice');
     }
 
 }
 
-exports.getAllInvoiceService = async(clientId,invoices) => {
+exports.getAllInvoiceService = async (clientId) => {
     try {
-        let invoiceDetailsData = 'discount advanceAmount subTotal finalTotal remainingBalance'
-        let invoideData = 'invoiceNumber status dueDate'
-        let clientData = 'orgName'
-        
-        const ok = await InvoiceDetails.find({ clientId: clientId }, invoiceDetailsData)
-            .populate('invoice_id', invoideData)
-            .populate('clientId',clientData)
+        const invoiceDetailsData = 'discount advanceAmount subTotal finalTotal remainingBalance';
+        const invoiceData = 'invoiceNumber status dueDate';
+        const clientData = 'orgName';
+
+        const invoices = await InvoiceDetails.find({ clientId }, invoiceDetailsData)
+            .populate('invoice_id', invoiceData)
+            .populate('clientId', clientData)
             .exec();
 
-        return ok
-
+        return invoices;
     } catch (err) {
-        console.log(err)
+        console.error('Error fetching invoices:', err);
+        throw new Error('Failed to fetch invoices');
     }
-}
+};
 
-
-exports.getSingleInvoiceService = async(invoiceId) => {
+exports.getSingleInvoiceService = async (invoiceId) => {
     try {
+        const invoiceDetailsData = 'discount advanceAmount subTotal finalTotal remainingBalance items';
+        const invoiceData = 'invoiceNumber status dueDate startDate';
+        const clientData = 'clientName orgName clientEmail clientPhone clientAddress1 clientAddress2 orgId';
 
-        
-        let invoiceDetailsData = 'discount advanceAmount subTotal finalTotal remainingBalance items'
-        let invoideData = 'invoiceNumber status dueDate'
-        let clientData = 'clientName orgName clientEmail clientPhone clientAddress1 clientAddress2 orgId'
-
-        const ok = await InvoiceDetails.findOne({ invoice_id: invoiceId }, invoiceDetailsData)
-            .populate('invoice_id', invoideData)
-            .populate('clientId',clientData)
+        const invoice = await InvoiceDetails.findOne({ invoice_id: invoiceId }, invoiceDetailsData)
+            .populate('invoice_id', invoiceData)
+            .populate('clientId', clientData)
             .exec();
 
-        console.log(ok)
+        if (!invoice) {
+            throw new Error('Invoice not found');
+        }
 
-        return ok
+        return invoice;
 
     } catch (err) {
-        console.log(err)
+        console.error('Error fetching single invoice:', err);
+        throw new Error(err.message || 'Failed to fetch invoice');
     }
-}
+};
+
+exports.deleteInvoiceService = async (invoiceId) => {
+    try {
+        const detailsResult = await InvoiceDetails.deleteOne({ invoice_id: invoiceId });
+
+        if (detailsResult.deletedCount === 0) {
+            throw new Error('Invoice details not found.');
+        }
+
+        const invoiceResult = await Invoice.deleteOne({ _id: invoiceId });
+
+        if (invoiceResult.deletedCount === 0) {
+            throw new Error('Invoice not found or deletion failed.');
+        }
+
+        return { success: true, message: 'Invoice and details successfully deleted.' };
+
+    } catch (err) {
+        console.error('Error deleting invoice:', err);
+        throw new Error(err.message || 'Failed to delete invoice.');
+    }
+};
+
+exports.editInvoiceService = async (body, invoiceId) => {
+    let session = null;
+
+    try {
+        session = await mongoose.startSession();
+        session.startTransaction();
+
+        const {
+            startDate,
+            dueDate,
+            status,
+            discount,
+            advanceAmount,
+            items,
+            subTotal,
+            finalTotal,
+            remainingBalance
+        } = body;
+
+        await Invoice.updateOne(
+            { _id: invoiceId },
+            { $set: { startDate, dueDate, status } },
+            { session }
+        );
+
+        await InvoiceDetails.updateOne(
+            { invoice_id: invoiceId },
+            { $set: { discount, advanceAmount, items, subTotal, finalTotal, remainingBalance } },
+            { session }
+        );
+
+        await session.commitTransaction();
+        session.endSession();
+
+        const updatedInvoice = await InvoiceDetails.findOne({ invoice_id: invoiceId })
+            .populate('invoice_id')
+            .populate('clientId');
+
+        return updatedInvoice;
+
+    } catch (err) {
+        if (session) await session.abortTransaction();
+        if (session) session.endSession();
+        console.error('Error editing invoice:', err);
+        throw new Error(err.message || 'Failed to edit invoice');
+    }
+};

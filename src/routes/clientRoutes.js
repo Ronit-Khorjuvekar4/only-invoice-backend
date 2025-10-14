@@ -13,6 +13,8 @@ router.get('/get-invoice', clientController.getAllInvoiceController);
 
 router.get('/single-invoice', clientController.getSingleInvoiceController);
 
+router.delete('/delete-invoice',clientController.deleteInvoiceController)
 
+router.put('/edit-invoice',clientController.editInvoiceController)
 
 module.exports = router;
