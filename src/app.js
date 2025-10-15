@@ -1,6 +1,7 @@
 const express = require('express');
 const connectDB = require('./config/db'); // Import the connectDB function
 const clientRoutes = require('./routes/clientRoutes')
+const authRoutes = require('./routes/authRoute')
 const cors = require('cors');
 
 const app = express();
@@ -10,6 +11,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use('/api', clientRoutes)
+app.use('/api/auth',authRoutes)
 
 connectDB()
 
