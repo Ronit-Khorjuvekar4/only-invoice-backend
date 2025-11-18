@@ -1,12 +1,14 @@
-const jwt = require('jsonwebtoken')
+const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'supersecret';
-const JWT_EXPIRES_IN = '7d'
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_EXPIRES_IN = '7d';
 
-exports.generateToken = (payload) => {
-    return jwt.sign(payload,JWT_SECRET,{expiresIn:JWT_EXPIRES_IN})
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET must be set');
 }
 
-exports.verifyToken = (token) => {
-    return jwt.verify(token,JWT_SECRET)
-}
+exports.generateToken = (payload) =>
+  jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+
+// Use sync verify for HMAC secrets; wrap in try/catch in middleware.
+exports.verifyToken = (token) => jwt.verify(token, JWT_SECRET);

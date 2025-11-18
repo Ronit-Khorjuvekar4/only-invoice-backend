@@ -18,7 +18,7 @@ exports.getClientService = async () => {
 
 exports.createClientService = async (clientData) => {
 
-    try {
+    try { 
         console.log(clientData)
         const newClient = new Client(clientData)
         await newClient.save()
